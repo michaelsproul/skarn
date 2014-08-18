@@ -79,7 +79,11 @@ Lines beginning with the `/#/` prelude are taken as comments.
 ## Summary
 
 Simple paths: Only `*`, `/` and `\` have special meaning.
+
 Glob paths: `/*/`
+
 Excluded paths: `/!/`
+
 Excluded glob paths: `/!*/` (or `/*!/`)
+
 Comments: `/#/`

@@ -2,7 +2,7 @@
 
 name = "skarn"
 version = "0.1.0"
-authors = ["micsproul@gmail.com"]
+authors = ["Michael Sproul <micsproul@gmail.com>"]
 
 [[bin]]
 

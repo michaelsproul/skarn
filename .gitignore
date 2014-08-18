@@ -1,2 +1,5 @@
 # Compiled output
 target
+
+# Cargo.lock (no point locking deps yet)
+Cargo.lock
