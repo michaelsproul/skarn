@@ -37,7 +37,7 @@ impl Pattern {
         Glob(glob::Pattern::new(pattern))
     }
 
-    /// Scan a simple pattern for unescaped '*' characters
+    /// Scan a simple pattern for unescaped '*' characters.
     fn scan_for_wildcards(pattern: &str) -> bool {
         let mut escaped = false;
 
@@ -64,14 +64,14 @@ impl Pattern {
         false
     }
 
-    /// Create a plain pattern from a wildcard-free string
+    /// Create a plain pattern from a wildcard-free string.
     fn create_plain_pattern(pattern: &str) -> Pattern {
         let mut result = String::new();
         let mut escaped = false;
 
         for c in pattern.chars() {
             match c {
-                // Add escaped backslashes, and set 'escaped' to true for unescaped ones
+                // Add escaped backslashes, and set 'escaped' to true for unescaped ones.
                 '\\' => {
                     if escaped {
                         result.push_char(c);
@@ -155,6 +155,10 @@ impl PatternNode {
             children: Vec::new()
         }
     }
+
+    pub fn insert(&mut self, path: &[Pattern]) {
+
+    }
 }
 
 // Tests
@@ -175,21 +179,21 @@ fn test_simple_pattern_escaping() {
 #[test]
 fn test_simple_pattern_matching() {
     let js = Pattern::simple_pattern("J*S");
-    let matches = vec!(
+    let matches = vec![
         "JS",
         "J.S",
         "J*S",
         "JASS",
         "JAVA SCRIPTS"
-    );
+    ];
     for m in matches.iter() {
         assert!(js.matches(*m));
     }
 
-    let non_matches = vec!(
+    let non_matches = vec![
         "AJS",
         "JavaScript"
-    );
+    ];
     for n in non_matches.iter() {
         assert!(!js.matches(*n));
     }
