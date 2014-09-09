@@ -1,19 +1,18 @@
-extern crate glob;
-
 use std::vec::Vec;
 
-/// Enum for different pattern types
+/// Enum for different pattern types.
 /// Plain: Just a string, no wildcards.
 /// Glob: Any pattern, including processed "simple paths".
+#[deriving(PartialEq, Eq)]
 pub enum Pattern {
     Plain(String),
     Glob(glob::Pattern)
 }
 
-/// Type representing part of a pattern path, for use in a tree-like structure.
+/// Type representing part of a pattern path, for use in a trie-like structure.
 pub struct PatternNode {
     pattern: Pattern,
-    children: Vec<Box<PatternNode>>
+    children: Vec<PatternNode>
 }
 
 impl Pattern {
@@ -156,7 +155,7 @@ impl PatternNode {
         }
     }
 
-    pub fn insert(&mut self, path: &[Pattern]) {
+    pub fn insert(&mut self, path: Vec<Pattern>) {
 
     }
 }

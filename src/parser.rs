@@ -2,9 +2,10 @@
 /// This module contains functions for processing an include file into a tree of PatternNode objects.
 
 use pattern::{Pattern, PatternNode, Plain, Glob};
+use regex::Regex;
 
-static comment_line_regex = regex!("^/#/ .*");
-static line_regex = regex!(r"^(?P<prelude>/(?P<inner_prelude>[!\*]{1,2})/ )?(?P<path>[^/].*)$");
+static comment_line_regex: Regex = regex!("^/#/ .*");
+static line_regex: Regex = regex!(r"^(?P<prelude>/(?P<inner_prelude>[!\*]{1,2})/ )?(?P<path>[^/].*)$");
 
 pub type PatternTreePair = (PatternNode, PatternNode);
 
@@ -40,7 +41,7 @@ pub fn parse_include_file(include_file: &str) -> Result<PatternTreePair, ParseEr
 
         match prelude {
             SimpleInclude | GlobInclude => include_tree.insert(path_components),
-            SimpleExclude | GlobExclude => include_tree.insert(path_components)
+            SimpleExclude | GlobExclude => exclude_tree.insert(path_components)
         }
     }
 
