@@ -1,19 +1,19 @@
+use glob;
+
 use std::vec::Vec;
+use trie::Trie;
 
 /// Enum for different pattern types.
+///
 /// Plain: Just a string, no wildcards.
 /// Glob: Any pattern, including processed "simple paths".
-#[deriving(PartialEq, Eq)]
+#[deriving(PartialEq, Eq, Hash, Clone)]
 pub enum Pattern {
     Plain(String),
     Glob(glob::Pattern)
 }
 
-/// Type representing part of a pattern path, for use in a trie-like structure.
-pub struct PatternNode {
-    pattern: Pattern,
-    children: Vec<PatternNode>
-}
+pub type PatternTrie = Trie<Pattern, bool>;
 
 impl Pattern {
     /// Create a Pattern for part of a simple path (only '*' wildcards).
@@ -144,19 +144,6 @@ impl Pattern {
                 pattern.matches(string)
             }
         }
-    }
-}
-
-impl PatternNode {
-    pub fn new(pattern: Pattern) -> PatternNode {
-        PatternNode {
-            pattern: pattern,
-            children: Vec::new()
-        }
-    }
-
-    pub fn insert(&mut self, path: Vec<Pattern>) {
-
     }
 }
 

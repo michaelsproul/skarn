@@ -7,3 +7,11 @@ authors = ["Michael Sproul <micsproul@gmail.com>"]
 [[bin]]
 
 name = "skarn"
+
+[dependencies.glob]
+
+git = "https://github.com/rust-lang/glob.git"
+
+[dependencies.trie]
+
+git = "https://github.com/michaelsproul/rust-generic-trie.git"
