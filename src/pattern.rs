@@ -1,6 +1,6 @@
 use glob;
 
-use std::vec::Vec;
+use std::fmt::{Formatter, FormatError, Show};
 use trie::Trie;
 
 /// Enum for different pattern types.
@@ -13,7 +13,16 @@ pub enum Pattern {
     Glob(glob::Pattern)
 }
 
-pub type PatternTrie = Trie<Pattern, bool>;
+impl Show for Pattern {
+    fn fmt(&self, fmt: &mut Formatter) -> Result<(), FormatError> {
+        match *self {
+            Plain(ref s) => s.fmt(fmt),
+            Glob(_) => "Glob".fmt(fmt)
+        }
+    }
+}
+
+pub type PatternTrie = Trie<Pattern, ()>;
 
 impl Pattern {
     /// Create a Pattern for part of a simple path (only '*' wildcards).

@@ -1,13 +1,15 @@
 /// parser.rs, part of Skarn.
 /// This module contains functions for processing an include file into a tree of PatternNode objects.
 
-use pattern::{Pattern, PatternNode, Plain, Glob};
+use trie::Trie;
+
+use pattern::{Pattern, PatternTrie, Plain, Glob};
 use regex::Regex;
 
 static comment_line_regex: Regex = regex!("^/#/ .*");
 static line_regex: Regex = regex!(r"^(?P<prelude>/(?P<inner_prelude>[!\*]{1,2})/ )?(?P<path>[^/].*)$");
 
-pub type PatternTreePair = (PatternNode, PatternNode);
+pub type PatternTriePair = (PatternTrie, PatternTrie);
 
 pub enum Prelude {
     SimpleInclude,
@@ -16,33 +18,34 @@ pub enum Prelude {
     GlobExclude,
 }
 
+#[deriving(Show)]
 pub enum ParseError {
     InvalidLine,
     InvalidPrelude,
     TrivialInput
 }
 
-pub fn parse_include_file(include_file: &str) -> Result<PatternTreePair, ParseError> {
-    let mut include_tree = PatternNode::new(Pattern::simple_pattern("root"));
-    let mut exclude_tree = PatternNode::new(Pattern::simple_pattern("root"));
+pub fn parse_include_file(include_file: &str) -> Result<PatternTriePair, ParseError> {
+    let mut include_tree: PatternTrie = Trie::new();
+    let mut exclude_tree: PatternTrie = Trie::new();
 
-    let is_trivial_tree = true;
+    let mut is_trivial_tree = true;
     for line in include_file.lines() {
         if comment_line_regex.is_match(line) {
             continue;
         }
 
-        let path_components, prelude = match parse_single_line(line) {
-            Ok(path_components, prelude) => (path_components, prelude),
+        let (path_components, prelude) = match parse_single_line(line) {
+            Ok(result) => result,
             Err(e) => return Err(e)
         };
 
         is_trivial_tree = false;
 
         match prelude {
-            SimpleInclude | GlobInclude => include_tree.insert(path_components),
-            SimpleExclude | GlobExclude => exclude_tree.insert(path_components)
-        }
+            SimpleInclude | GlobInclude => include_tree.insert(path_components.as_slice(), ()),
+            SimpleExclude | GlobExclude => exclude_tree.insert(path_components.as_slice(), ())
+        };
     }
 
     if is_trivial_tree {

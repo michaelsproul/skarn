@@ -12,6 +12,14 @@ name = "skarn"
 
 git = "https://github.com/rust-lang/glob.git"
 
+[dependencies.typemap]
+
+git = "https://github.com/reem/rust-typemap.git"
+
+[dependencies.phantom]
+
+git = "https://github.com/reem/rust-phantom.git"
+
 [dependencies.trie]
 
 git = "https://github.com/michaelsproul/rust-generic-trie.git"

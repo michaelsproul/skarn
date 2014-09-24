@@ -10,26 +10,26 @@ Skarn Selective File Sync Algorithm
     - Both of the above (default).
 
 ## Input
-* `src_dir`, a `Path` describing the source directory.
-* `dest_dir`, a `Path` describing the destination directory.
-* `include_tree`, a `PatternNode` describing the files to include.
-* `exclude_tree`, a `PatternNode` describing the files to exclude.
+* `src_dir`, a filesystem path describing the source directory.
+* `dest_dir`, a filesystem path describing the destination directory.
+* `include_tree`, a trie describing the files to include.
+* `exclude_tree`, a trie describing the files to exclude.
 * `options`, an object describing the comparison mechanism and deletion behaviour.
 
-The inlcude-tree and exclude-tree will normally be created from files in the [Skarn Include File Format](IncludeFileFormat.md).
+The include-tree and exclude-tree will normally be created from files in the [Skarn Include File Format](IncludeFileFormat.md).
 
 ## Output:
 * (`copy_paths`, `delete_paths`)
-* `copy_paths`, a vector of paths relative to the source directory in need of copying.
-* `delete_paths`, a vector of paths relative to the destination directory in need of deletion.
+* `copy_paths`, a trie of paths relative to the source directory in need of copying.
+* `delete_paths`, a trie of paths relative to the destination directory in need of deletion.
 
 ## Algorithm
 
 ```python
 # Major Step 1:
-# Construct a tree (or trie) of paths from the source directory which
+# Construct a trie of paths from the source directory which
 # are marked for inclusion by the pattern trees.
-src_tree = empty tree
+src_tree = empty trie
 
 for each path in a recursive traversal of src_dir:
     # Find the most specific match from either the include tree or the exclude tree.
@@ -67,7 +67,7 @@ for each path in a recursive traversal of src_dir:
             break
 
         # Likewise if the exclude-tree has a more specific pattern and the include-tree
-        # is exhausted, exclude the path.;
+        # is exhausted, exclude the path.
         if new_matching_include_nodes.length == 0:
             is_included_path = false
             break
@@ -83,15 +83,14 @@ for each path in a recursive traversal of src_dir:
 
 # Main Step 2:
 # Work out which files need copying and deleting.
-copy_paths = empty list
-delete_paths = empty list
+copy_paths = src_tree (clone or move)
+delete_paths = empty trie
 
 for each path in a recursive traversal of dest_dir:
-    if the path is contained in src_tree:
-        if the comparison function shows the files to be different:
-            add the path to copy_paths
-        else:
-            continue
+    if the path is contained in copy_paths:
+        if the comparison function shows the files to be the same:
+            remove the path from copy_paths
+        continue
 
     # If the path isn't in the source tree it is either excluded or extraneous (extra).
     # FIXME: Using the current method more computation is required to determine if a path
@@ -106,7 +105,7 @@ for each path in a recursive traversal of dest_dir:
 
     if (is_extraneous and options.delete_extra) or
        (is_excluded and options.delete_excluded):
-        add the path to copy_paths
+        add the path to delete_paths
 
 return (copy_paths, delete_paths)
 ```
