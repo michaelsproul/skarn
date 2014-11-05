@@ -4,16 +4,18 @@ Skarn Selective File Sync Algorithm
 ## Features
 
 * Flexible "sameness" checking. By modification time, hash or file content.
-* Optional deletion of extraneous and excluded files.
-    - Delete files in the destination missing from the source.
-    - Delete files excluded by the pattern trees.
-    - Both of the above (default).
+* Optional deletion of extraneous files. Three types:
+    * Included with no equiv: Files included by the match trees with no equivalent in the source directory.
+    * Excluded with equiv: Files excluded by the match trees that exist in both the source and destination directories.
+    * Excluded with no equiv: Files excluded by the match trees with no equivalent in the source directory.
+
+The natural fourth type of file (included with equiv) is copied only if the destination's copy differs from the source's.
 
 ## Input
 * `src_dir`, a filesystem path describing the source directory.
 * `dest_dir`, a filesystem path describing the destination directory.
-* `include_tree`, a trie describing the files to include.
-* `exclude_tree`, a trie describing the files to exclude.
+* `include_tree`, a trie of patterns describing the files to include.
+* `exclude_tree`, a trie of patterns describing the files to exclude.
 * `options`, an object describing the comparison mechanism and deletion behaviour.
 
 The include-tree and exclude-tree will normally be created from files in the [Skarn Include File Format](IncludeFileFormat.md).
@@ -87,24 +89,32 @@ copy_paths = src_tree (clone or move)
 delete_paths = empty trie
 
 for each path in a recursive traversal of dest_dir:
+    # Case 1: Included with equiv.
     if the path is contained in copy_paths:
         if the comparison function shows the files to be the same:
             remove the path from copy_paths
-        continue
 
-    # If the path isn't in the source tree it is either excluded or extraneous (extra).
-    # FIXME: Using the current method more computation is required to determine if a path
-    # is both extraneous *and* excluded. It is tempting to delete files like this only if
-    # the "delete extraneous files" option is set.
-    is_extraneous = false
-    is_excluded = false
-    if no equivalent file exists in the source directory:
-        is_extraneous = true
-    else:
-        is_excluded = true
+    # Opportunistic deletion.
+    else if the options dictate that all extraneous files should be deleted:
+        add the path to delete_paths
 
-    if (is_extraneous and options.delete_extra) or
-       (is_excluded and options.delete_excluded):
+    # Case 2: Excluded with equiv.
+    else if a file exists with the same path relative to src_dir:
+        if the options dictate that excluded equiv files should be deleted:
+            add the path to delete_paths
+
+    # More opportunistic deletion.
+    else if the options dictate that included and excluded equiv files should be deleted:
+        add the path to delete_paths
+
+    # Case 3: Included with no equiv.
+    # FIXME: Refactor referenced code above to match implementation and make this clearer.
+    else if the matching procedure from above shows the path to be included:
+        if the options dictate that included-no-equiv paths should be deleted:
+            add the path to delete_paths
+
+    # Case 4: Excluded with no equiv.
+    else if the options dictate that excluded-no-equiv paths should be deleted:
         add the path to delete_paths
 
 return (copy_paths, delete_paths)
