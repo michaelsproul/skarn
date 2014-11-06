@@ -1,4 +1,4 @@
-#![feature(phase)]
+#![feature(phase, if_let, while_let, slicing_syntax)]
 
 #[phase(plugin, link)] extern crate log;
 
@@ -19,7 +19,9 @@ use sync::sync;
 pub mod compare;
 pub mod config;
 pub mod parser;
+pub mod path;
 pub mod pattern;
+pub mod matcher;
 pub mod sync;
 
 fn main() {
@@ -29,23 +31,27 @@ fn main() {
 
     let include_file = File::open(&Path::new("include.ska")).read_to_end().unwrap();
 
-    let (include_tree, exclude_tree) = match parse_include_file(from_utf8(include_file.as_slice()).unwrap()) {
+    let matcher = match parse_include_file(from_utf8(include_file.as_slice()).unwrap()) {
         Ok(x) => x,
-        Err(e) => fail!(format!("Error: `{}`", e))
+        Err(e) => panic!(format!("Error: {}", e))
     };
 
     debug!("Include Tree:");
-    debug!("{}", include_tree);
+    debug!("{}", matcher.include_trie);
     debug!("Exclude Tree:");
-    debug!("{}", exclude_tree);
+    debug!("{}", matcher.exclude_trie);
 
-    let (copy_paths, delete_paths) = match sync(&src_dir, &dest_dir, &include_tree, &exclude_tree, &mut config) {
+    let (copy_paths, delete_paths) = match sync(&src_dir, &dest_dir, &matcher, &mut config) {
         Ok(x) => x,
-        Err(e) => fail!(format!("Error: `{}`", e))
+        Err(e) => panic!(format!("Error: {}", e))
     };
 
     println!("Would Copy:")
     for path in copy_paths.keys() {
+        println!("{}", path);
+    }
+    println!("Would Delete:")
+    for path in delete_paths.keys() {
         println!("{}", path);
     }
 }

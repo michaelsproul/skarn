@@ -16,24 +16,26 @@ impl ComparisonMethodTrait for Content {
         let mut x_file = try!(File::open(x));
         let mut y_file = try!(File::open(y));
 
-        for (x_byte, y_byte) in x_file.bytes().zip(y_file.bytes()) {
-            let x_byte = match x_byte {
-                Ok(byte) => byte,
-                Err(ref e) if e.kind == EndOfFile => return Ok(false),
-                Err(e) => return Err(e)
-            };
-
-            let y_byte = match y_byte {
-                Ok(byte) => byte,
-                Err(ref e) if e.kind == EndOfFile => return Ok(false),
-                Err(e) => return Err(e)
-            };
-
-            if x_byte != y_byte {
-                return Ok(false);
+        loop {
+            match (x_file.read_byte(), y_file.read_byte()) {
+                (Ok(x_byte), Ok(y_byte)) => {
+                    if x_byte != y_byte {
+                        return Ok(false);
+                    }
+                },
+                (Err(xe), Err(ye)) => {
+                    if xe.kind == ye.kind && xe.kind == EndOfFile {
+                        return Ok(true);
+                    }
+                    return Err(xe);
+                },
+                (Err(e), _) | (_, Err(e)) => {
+                    if e.kind == EndOfFile {
+                        return Ok(false);
+                    }
+                    return Err(e);
+                }
             }
         }
-
-        Ok(true)
     }
 }

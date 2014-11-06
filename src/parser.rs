@@ -1,15 +1,15 @@
 /// parser.rs, part of Skarn.
 /// This module contains functions for processing an include file into a tree of PatternNode objects.
 
-use trie::Trie;
-
-use pattern::{Pattern, PatternTrie, Plain, Glob};
 use regex::Regex;
 
-static comment_line_regex: Regex = regex!("^/#/ .*");
-static line_regex: Regex = regex!(r"^(?P<prelude>/(?P<inner_prelude>[!\*]{1,2})/ )?(?P<path>[^/].*)$");
+use trie::Trie;
 
-pub type PatternTriePair = (PatternTrie, PatternTrie);
+use pattern::{Pattern, Plain, Glob};
+use matcher::{Matcher, PatternTrie};
+
+static COMMENT_LINE_REGEX: Regex = regex!("^/#/ .*");
+static LINE_REGEX: Regex = regex!(r"^(?P<prelude>/(?P<inner_prelude>[!\*]{1,2})/ )?(?P<path>[^/].*)$");
 
 pub enum Prelude {
     SimpleInclude,
@@ -25,13 +25,13 @@ pub enum ParseError {
     TrivialInput
 }
 
-pub fn parse_include_file(include_file: &str) -> Result<PatternTriePair, ParseError> {
-    let mut include_tree: PatternTrie = Trie::new();
-    let mut exclude_tree: PatternTrie = Trie::new();
+pub fn parse_include_file(include_file: &str) -> Result<Matcher, ParseError> {
+    let mut include_trie: PatternTrie = Trie::new();
+    let mut exclude_trie: PatternTrie = Trie::new();
 
     let mut is_trivial_tree = true;
     for line in include_file.lines() {
-        if comment_line_regex.is_match(line) {
+        if COMMENT_LINE_REGEX.is_match(line) {
             continue;
         }
 
@@ -43,8 +43,8 @@ pub fn parse_include_file(include_file: &str) -> Result<PatternTriePair, ParseEr
         is_trivial_tree = false;
 
         match prelude {
-            SimpleInclude | GlobInclude => include_tree.insert(path_components.as_slice(), ()),
-            SimpleExclude | GlobExclude => exclude_tree.insert(path_components.as_slice(), ())
+            SimpleInclude | GlobInclude => include_trie.insert(path_components.as_slice(), ()),
+            SimpleExclude | GlobExclude => exclude_trie.insert(path_components.as_slice(), ())
         };
     }
 
@@ -52,12 +52,15 @@ pub fn parse_include_file(include_file: &str) -> Result<PatternTriePair, ParseEr
         return Err(TrivialInput);
     }
 
-    Ok((include_tree, exclude_tree))
+    Ok(Matcher {
+        include_trie: include_trie,
+        exclude_trie: exclude_trie
+    })
 }
 
 pub fn parse_single_line(line: &str) -> Result<(Vec<Pattern>, Prelude), ParseError> {
     // Parse the line into a prelude and path.
-    let captures = match line_regex.captures(line) {
+    let captures = match LINE_REGEX.captures(line) {
         Some(captures) => captures,
         None => return Err(InvalidLine)
     };

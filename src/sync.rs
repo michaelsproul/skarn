@@ -4,132 +4,87 @@
 
 use std::io::IoResult;
 use std::io::fs::{PathExtensions, walk_dir};
+use std::collections::HashSet;
 
 use trie::Trie;
 
-use pattern::{Pattern, PatternTrie};
-use config::{Config, ComparisonMethod};
+use pattern::Pattern;
+use matcher::{Matcher, PathTrie};
+use matcher::Class::Included;
+use config::{Config, ComparisonMethod, IncludeByDefault};
+use config::{DeleteBehaviour, IncludedNoEquiv, ExcludedEquiv, ExcludedNoEquiv};
 use compare::ComparisonMethodTrait;
-
-pub type StringTrie = Trie<String, ()>;
-
-pub fn generate_match_tree( src_dir: &Path,
-                            include_tree: &PatternTrie,
-                            exclude_tree: &PatternTrie,
-                            options: &Config) -> IoResult<StringTrie> {
-    debug!("Generating Match Tree.");
-    let mut match_tree: StringTrie = Trie::new();
-
-    let mut src_dir_walk = try!(walk_dir(src_dir));
-
-    for path_abs in src_dir_walk {
-        let path = path_abs.path_relative_from(src_dir).unwrap();
-
-        let mut matching_include_nodes: Vec<&PatternTrie> = vec![include_tree];
-        let mut matching_exclude_nodes: Vec<&PatternTrie> = vec![exclude_tree];
-
-        let mut is_included_path = false;
-
-        let path_components: Vec<&str> = path.str_components().map(|c| c.unwrap()).collect();
-
-        for &component in path_components.iter() {
-            // Expand the layers of include and exclude nodes.
-            matching_include_nodes = new_matching_nodes(component, matching_include_nodes);
-            matching_exclude_nodes = new_matching_nodes(component, matching_exclude_nodes);
-
-            // If both pattern paths are exhausted, allow the exclusion rule to dominate.
-            if matching_include_nodes.is_empty() &&
-                matching_exclude_nodes.is_empty() {
-                is_included_path = false;
-                break;
-            }
-
-            // If only the exclusion pattern path is exhausted, include the path.
-            if matching_exclude_nodes.is_empty() {
-                is_included_path = true;
-                break;
-            }
-
-            // If only the inclusion pattern path is exhausted, exclude the path.
-            if matching_include_nodes.is_empty() {
-                is_included_path = false;
-                break;
-            }
-        }
-
-        if is_included_path {
-            debug!(" Match: `{}`", path.display());
-            // If the path is a directory, add all files contained in it.
-            if path.is_dir() {
-                let mut path_dir_walk = try!(walk_dir(&path));
-                for child_path in path_dir_walk {
-                    let path_key: Vec<String> = child_path.str_components()
-                                            .map(|s| s.unwrap().to_string())
-                                            .collect();
-                    match_tree.insert(path_key.as_slice(), ());
-                }
-            }
-            // If the path is a file, add it directly.
-            else {
-                let path_key: Vec<String> = path_components.iter().map(|s| s.to_string()).collect();
-                match_tree.insert(path_key.as_slice(), ());
-            }
-        } else {
-            debug!(" No Match: `{}`", path.display());
-        }
-    }
-
-    Ok(match_tree)
-}
-
-fn new_matching_nodes<'a>(component: &str, matching_nodes: Vec<&'a PatternTrie>) -> Vec<&'a PatternTrie> {
-    let mut new_matching_nodes = vec![];
-
-    for &node in matching_nodes.iter() {
-        for (child_pattern, child) in node.children.iter() {
-            if child_pattern.matches(component) {
-                new_matching_nodes.push(child);
-            }
-        }
-    }
-    new_matching_nodes
-}
+use path::StringComponents;
 
 pub fn sync(src_dir: &Path,
             dest_dir: &Path,
-            include_tree: &PatternTrie,
-            exclude_tree: &PatternTrie,
-            options: &mut Config) -> IoResult<(StringTrie, StringTrie)> {
-    let mut copy_paths: StringTrie = try!(generate_match_tree(src_dir, include_tree, exclude_tree, options));
+            matcher: &Matcher,
+            options: &mut Config) -> IoResult<(PathTrie, PathTrie)> {
+    // Classify every file in the source directory.
+    // Included files are initially marked for copying, and filtered upon traversal of the dest dir.
+    let include_by_default = *options.get::<IncludeByDefault, bool>();
+    let (mut copy_paths, _) = try!(matcher.classify_recursive(src_dir, include_by_default));
+
     let mut delete_paths = Trie::new();
 
+    // FIXME: Remove clone somehow.
+    let delete_behaviour = options.get::<DeleteBehaviour, HashSet<DeleteBehaviour>>().clone();
     let comparison_method = options.get::<ComparisonMethod, ComparisonMethod>();
 
+    // Walk the destination directory.
     let mut dest_dir_walk = try!(walk_dir(dest_dir));
+    for path in dest_dir_walk {
+        // Create a relative path, and a path relative to the source directory.
+        let relative_path = path.path_relative_from(dest_dir).unwrap();
+        let src_equiv = src_dir.join(relative_path.clone());
 
-    debug!("Exploring destination directory.");
+        let path_key: Vec<String> = relative_path.string_components();
 
-    for path_abs in dest_dir_walk {
-        let path = path_abs.path_relative_from(dest_dir).unwrap();
-
-        let path_key: Vec<String> = path.str_components().map(|s| s.unwrap().to_string()).collect();
-
-        if copy_paths.find(path_key.as_slice()).is_some() {
-            let src_abs = src_dir.join(path.clone());
-            let dest_abs = dest_dir.join(path.clone());
-
-            let same_file = try!(comparison_method.same_file(&src_abs, &dest_abs));
+        // Case 1: Included, Equiv.
+        // If the files match, remove the file from the list of files in need of copying.
+        if copy_paths.find(path_key[]).is_some() {
+            let same_file = try!(comparison_method.same_file(&path, &src_equiv));
 
             if same_file {
-                debug!(" Files Match: `{}`", path.display());
-                copy_paths.remove(path_key.as_slice());
+                debug!(" Files Match: {}", relative_path.display());
+                copy_paths.remove(path_key[]);
             } else {
-                debug!(" Files Differ: `{}`", path.display());
-                // TODO: Deletion logic.
+                debug!(" Files Differ: {}", relative_path.display());
             }
+        }
+
+        // Opportunistic deletion.
+        // If configured to delete ALL types of extraneous files, there is no need for further checks.
+        else if delete_behaviour.len() == 3 {
+            delete_paths.insert(path_key[], ());
+        }
+
+        // Case 2: Excluded, Equiv.
+        else if src_equiv.exists() {
+            if delete_behaviour.contains(&ExcludedEquiv) {
+                delete_paths.insert(path_key[], ());
+            }
+        }
+
+        // Opportunistic deletion.
+        // If configured to delete all files with no equivalent, delete away!
+        else if delete_behaviour.contains(&IncludedNoEquiv) &&
+                delete_behaviour.contains(&ExcludedNoEquiv) {
+            delete_paths.insert(path_key[], ());
+        }
+
+        // Case 3: Included, No Equiv.
+        else if let Included = matcher.classify(&relative_path) {
+            if delete_behaviour.contains(&IncludedNoEquiv) {
+                delete_paths.insert(path_key[], ());
+            }
+        }
+
+        // Case 4: Excluded, No Equiv.
+        else if delete_behaviour.contains(&ExcludedNoEquiv) {
+            delete_paths.insert(path_key[], ());
         }
     }
 
     Ok((copy_paths, delete_paths))
 }
-

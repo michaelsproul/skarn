@@ -4,12 +4,11 @@ use std::fmt::{Formatter, FormatError, Show};
 use trie::Trie;
 
 /// Enum for different pattern types.
-///
-/// Plain: Just a string, no wildcards.
-/// Glob: Any pattern, including processed "simple paths".
 #[deriving(PartialEq, Eq, Hash, Clone)]
 pub enum Pattern {
+    /// Just a string, no wildcards.
     Plain(String),
+    /// Glob pattern, using any globbing constructs.
     Glob(glob::Pattern)
 }
 
@@ -21,8 +20,6 @@ impl Show for Pattern {
         }
     }
 }
-
-pub type PatternTrie = Trie<Pattern, ()>;
 
 impl Pattern {
     /// Create a Pattern for part of a simple path (only '*' wildcards).
@@ -82,7 +79,7 @@ impl Pattern {
                 // Add escaped backslashes, and set 'escaped' to true for unescaped ones.
                 '\\' => {
                     if escaped {
-                        result.push_char(c);
+                        result.push(c);
                         escaped = false;
                     } else {
                         escaped = true;
@@ -91,7 +88,7 @@ impl Pattern {
 
                 // Add all other characters
                 c => {
-                    result.push_char(c);
+                    result.push(c);
                     escaped = false;
                 }
             }
@@ -109,9 +106,9 @@ impl Pattern {
             match c {
                 // Surround glob wildcards by a [] group
                 '?' | '[' | ']' => {
-                    result.push_char('[');
-                    result.push_char(c);
-                    result.push_char(']');
+                    result.push('[');
+                    result.push(c);
+                    result.push(']');
                     escaped = false;
                 },
 
@@ -120,7 +117,7 @@ impl Pattern {
                     if escaped {
                         result.push_str("[*]");
                     } else {
-                        result.push_char('*');
+                        result.push('*');
                     }
                     escaped = false;
                 },
@@ -128,7 +125,7 @@ impl Pattern {
                 // Add escaped backslashes
                 '\\' => {
                     if escaped {
-                        result.push_char('\\');
+                        result.push('\\');
                         escaped = false;
                     } else {
                         escaped = true;
@@ -136,7 +133,7 @@ impl Pattern {
                 },
 
                 // Add anything else as is
-                _ => { result.push_char(c) }
+                _ => { result.push(c) }
             }
         }
         result

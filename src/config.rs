@@ -2,7 +2,9 @@
 //!
 //! This module contains the definition of a flexible configuration object.
 
-use typemap::{TypeMap, Assoc};
+use std::collections::HashSet;
+
+use typemap::{TypeMap, Assoc, Occupied, Vacant};
 use phantom::Phantom;
 
 use compare::{ComparisonMethodTrait, Content};
@@ -22,13 +24,10 @@ impl Config {
     }
 
     pub fn get<K, V>(&mut self) -> &V where K: ConfigItem<V>, V: 'static {
-        let found = self.map.contains::<K, V>();
-        if found {
-            return self.map.find::<K, V>().unwrap();
+        match self.map.entry::<K, V>() {
+            Occupied(e) => &*e.into_mut(),
+            Vacant(e) => &*e.set(ConfigItem::default(Phantom::<K>))
         }
-        let default: V = ConfigItem::default(Phantom::<K>);
-        self.set::<K, V>(default);
-        self.get::<K, V>()
     }
 
     pub fn set<K, V>(&mut self, val: V) where K: ConfigItem<V>, V: 'static {
@@ -45,5 +44,30 @@ impl Assoc<ComparisonMethod> for ComparisonMethod {}
 impl ConfigItem<ComparisonMethod> for ComparisonMethod {
     fn default(_: Phantom<ComparisonMethod>) -> ComparisonMethod {
         box Content as Box<ComparisonMethodTrait>
+    }
+}
+
+pub struct IncludeByDefault;
+
+impl Assoc<bool> for IncludeByDefault {}
+
+impl ConfigItem<bool> for IncludeByDefault {
+    fn default(_: Phantom<IncludeByDefault>) -> bool {
+        true
+    }
+}
+
+#[deriving(PartialEq, Eq, Hash, Show, Clone)]
+pub enum DeleteBehaviour {
+    IncludedNoEquiv,
+    ExcludedEquiv,
+    ExcludedNoEquiv
+}
+
+impl Assoc<HashSet<DeleteBehaviour>> for DeleteBehaviour {}
+
+impl ConfigItem<HashSet<DeleteBehaviour>> for DeleteBehaviour {
+    fn default(_: Phantom<DeleteBehaviour>) -> HashSet<DeleteBehaviour> {
+        HashSet::new()
     }
 }
