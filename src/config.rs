@@ -4,7 +4,8 @@
 
 use std::collections::HashSet;
 
-use typemap::{TypeMap, Assoc, Occupied, Vacant};
+use typemap::{TypeMap, Assoc};
+use typemap::Entry::{Occupied, Vacant};
 use phantom::Phantom;
 
 use compare::{ComparisonMethodTrait, Content};
@@ -35,7 +36,26 @@ impl Config {
     }
 }
 
-// Concrete config items.
+// Concrete config items
+pub struct SourceDir;
+
+impl Assoc<Path> for SourceDir {}
+
+impl ConfigItem<Path> for SourceDir {
+    fn default(_: Phantom<SourceDir>) -> Path {
+        Path::new("")
+    }
+}
+
+pub struct DestDir;
+
+impl Assoc<Path> for DestDir {}
+
+impl ConfigItem<Path> for DestDir {
+    fn default(_: Phantom<DestDir>) -> Path {
+        Path::new("")
+    }
+}
 
 pub type ComparisonMethod = Box<ComparisonMethodTrait + 'static>;
 
@@ -47,6 +67,7 @@ impl ConfigItem<ComparisonMethod> for ComparisonMethod {
     }
 }
 
+
 pub struct IncludeByDefault;
 
 impl Assoc<bool> for IncludeByDefault {}
@@ -56,6 +77,7 @@ impl ConfigItem<bool> for IncludeByDefault {
         true
     }
 }
+
 
 #[deriving(PartialEq, Eq, Hash, Show, Clone)]
 pub enum DeleteBehaviour {

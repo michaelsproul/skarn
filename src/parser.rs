@@ -3,10 +3,14 @@
 
 use regex::Regex;
 
-use trie::Trie;
+use sequence_trie::SequenceTrie;
 
-use pattern::{Pattern, Plain, Glob};
+use pattern::Pattern;
+use pattern::Pattern::{Plain, Glob};
 use matcher::{Matcher, PatternTrie};
+
+use self::Prelude::{SimpleInclude, SimpleExclude, GlobInclude, GlobExclude};
+use self::ParseError::{InvalidLine, InvalidPrelude, TrivialInput};
 
 static COMMENT_LINE_REGEX: Regex = regex!("^/#/ .*");
 static LINE_REGEX: Regex = regex!(r"^(?P<prelude>/(?P<inner_prelude>[!\*]{1,2})/ )?(?P<path>[^/].*)$");
@@ -26,8 +30,8 @@ pub enum ParseError {
 }
 
 pub fn parse_include_file(include_file: &str) -> Result<Matcher, ParseError> {
-    let mut include_trie: PatternTrie = Trie::new();
-    let mut exclude_trie: PatternTrie = Trie::new();
+    let mut include_trie: PatternTrie = SequenceTrie::new();
+    let mut exclude_trie: PatternTrie = SequenceTrie::new();
 
     let mut is_trivial_tree = true;
     for line in include_file.lines() {
@@ -66,9 +70,9 @@ pub fn parse_single_line(line: &str) -> Result<(Vec<Pattern>, Prelude), ParseErr
     };
 
     // Extract the prelude.
-    let prelude = match captures.name("prelude") {
+    let prelude = match captures.name("prelude").unwrap() {
         "" => SimpleInclude,
-        _ => match captures.name("inner_prelude") {
+        _ => match captures.name("inner_prelude").unwrap() {
             "*" => GlobInclude,
             "!" => SimpleExclude,
             "!*" | "*!" => GlobExclude,
@@ -77,18 +81,16 @@ pub fn parse_single_line(line: &str) -> Result<(Vec<Pattern>, Prelude), ParseErr
     };
 
     // Extract the path, which is guaranteed to be non-empty by the regex.
-    let path = captures.name("path");
+    let path = captures.name("path").unwrap();
 
-    // Split the path into its components, and make each component a path.
-    let simple_map = |comp| Pattern::simple_pattern(comp);
-    let glob_map = |comp| Pattern::glob_pattern(comp);
-
-    let map_fn = match prelude {
-        SimpleInclude | SimpleExclude => simple_map,
-        GlobInclude | GlobExclude => glob_map
+    let components: Vec<Pattern> = match prelude {
+        SimpleInclude | SimpleExclude => {
+            path.split('/').map(|comp| Pattern::simple_pattern(comp)).collect()
+        },
+        GlobInclude | GlobExclude => {
+            path.split('/').map(|comp| Pattern::glob_pattern(comp)).collect()
+        }
     };
-
-    let components: Vec<Pattern> = path.split('/').map(map_fn).collect();
 
     Ok((components, prelude))
 }

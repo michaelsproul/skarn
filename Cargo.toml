@@ -8,9 +8,10 @@ authors = ["Michael Sproul <micsproul@gmail.com>"]
 
 name = "skarn"
 
-[dependencies.glob]
-
-git = "https://github.com/rust-lang/glob.git"
+[dependencies]
+glob = "*"
+docopt = "*"
+docopt_macros = "*"
 
 [dependencies.typemap]
 
@@ -20,6 +21,6 @@ git = "https://github.com/reem/rust-typemap.git"
 
 git = "https://github.com/reem/rust-phantom.git"
 
-[dependencies.trie]
+[dependencies.sequence_trie]
 
-git = "https://github.com/michaelsproul/rust-generic-trie.git"
+git = "https://github.com/michaelsproul/rust-sequence-trie.git"

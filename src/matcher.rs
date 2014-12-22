@@ -1,10 +1,12 @@
 use std::io::fs::{readdir, walk_dir, PathExtensions};
 use std::io::IoResult;
 
-use trie::Trie;
+use sequence_trie::SequenceTrie;
 
 use pattern::Pattern;
 use path::StringComponents;
+
+use self::Class::*;
 
 pub struct Matcher {
     pub include_trie: PatternTrie,
@@ -17,8 +19,8 @@ pub enum Class {
     Both
 }
 
-pub type PatternTrie = Trie<Pattern, ()>;
-pub type PathTrie = Trie<String, ()>;
+pub type PatternTrie = SequenceTrie<Pattern, ()>;
+pub type PathTrie = SequenceTrie<String, ()>;
 
 impl Matcher {
     /// Determine if a given path is included or excluded by the pair of matching tries.
@@ -64,8 +66,8 @@ impl Matcher {
     /// Returns two tries of paths, for included and excluded files respectively.
     /// The paths in both tries are relative to the root.
     pub fn classify_recursive(&self, root: &Path, include_by_default: bool) -> IoResult<(PathTrie, PathTrie)> {
-        let mut include_trie: PathTrie = Trie::new();
-        let mut exclude_trie: PathTrie = Trie::new();
+        let mut include_trie: PathTrie = SequenceTrie::new();
+        let mut exclude_trie: PathTrie = SequenceTrie::new();
 
         let mut stack = vec![root.clone()];
 

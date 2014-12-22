@@ -6,13 +6,13 @@ use std::io::IoResult;
 use std::io::fs::{PathExtensions, walk_dir};
 use std::collections::HashSet;
 
-use trie::Trie;
+use sequence_trie::SequenceTrie;
 
 use pattern::Pattern;
 use matcher::{Matcher, PathTrie};
 use matcher::Class::Included;
-use config::{Config, ComparisonMethod, IncludeByDefault};
-use config::{DeleteBehaviour, IncludedNoEquiv, ExcludedEquiv, ExcludedNoEquiv};
+use config::{Config, ComparisonMethod, IncludeByDefault, DeleteBehaviour};
+use config::DeleteBehaviour::*;
 use compare::ComparisonMethodTrait;
 use path::StringComponents;
 
@@ -25,7 +25,7 @@ pub fn sync(src_dir: &Path,
     let include_by_default = *options.get::<IncludeByDefault, bool>();
     let (mut copy_paths, _) = try!(matcher.classify_recursive(src_dir, include_by_default));
 
-    let mut delete_paths = Trie::new();
+    let mut delete_paths = SequenceTrie::new();
 
     // FIXME: Remove clone somehow.
     let delete_behaviour = options.get::<DeleteBehaviour, HashSet<DeleteBehaviour>>().clone();
@@ -42,7 +42,7 @@ pub fn sync(src_dir: &Path,
 
         // Case 1: Included, Equiv.
         // If the files match, remove the file from the list of files in need of copying.
-        if copy_paths.find(path_key[]).is_some() {
+        if copy_paths.get(path_key[]).is_some() {
             let same_file = try!(comparison_method.same_file(&path, &src_equiv));
 
             if same_file {

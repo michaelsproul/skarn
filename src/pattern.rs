@@ -1,7 +1,8 @@
 use glob;
 
-use std::fmt::{Formatter, FormatError, Show};
-use trie::Trie;
+use std::fmt::{mod, Formatter, Show};
+use sequence_trie::SequenceTrie;
+use self::Pattern::{Plain, Glob};
 
 /// Enum for different pattern types.
 #[deriving(PartialEq, Eq, Hash, Clone)]
@@ -13,7 +14,7 @@ pub enum Pattern {
 }
 
 impl Show for Pattern {
-    fn fmt(&self, fmt: &mut Formatter) -> Result<(), FormatError> {
+    fn fmt(&self, fmt: &mut Formatter) -> Result<(), fmt::Error> {
         match *self {
             Plain(ref s) => s.fmt(fmt),
             Glob(_) => "Glob".fmt(fmt)
