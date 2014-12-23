@@ -1,15 +1,10 @@
-use docopt::{mod, ArgvMap};
+use docopt;
 
 use config::{Config, SourceDir, DestDir};
 
 docopt! { Args, "
 Usage: skarn <source> <dest>
 "
-}
-
-struct Args {
-    arg_source: String,
-    arg_dest: String
 }
 
 pub fn parse_args() -> Result<Config, docopt::Error> {

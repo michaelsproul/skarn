@@ -6,7 +6,6 @@ use regex::Regex;
 use sequence_trie::SequenceTrie;
 
 use pattern::Pattern;
-use pattern::Pattern::{Plain, Glob};
 use matcher::{Matcher, PatternTrie};
 
 use self::Prelude::{SimpleInclude, SimpleExclude, GlobInclude, GlobExclude};
@@ -15,6 +14,7 @@ use self::ParseError::{InvalidLine, InvalidPrelude, TrivialInput};
 static COMMENT_LINE_REGEX: Regex = regex!("^/#/ .*");
 static LINE_REGEX: Regex = regex!(r"^(?P<prelude>/(?P<inner_prelude>[!\*]{1,2})/ )?(?P<path>[^/].*)$");
 
+#[deriving(Show, Copy)]
 pub enum Prelude {
     SimpleInclude,
     SimpleExclude,
@@ -22,7 +22,7 @@ pub enum Prelude {
     GlobExclude,
 }
 
-#[deriving(Show)]
+#[deriving(Show, Copy)]
 pub enum ParseError {
     InvalidLine,
     InvalidPrelude,
@@ -76,7 +76,7 @@ pub fn parse_single_line(line: &str) -> Result<(Vec<Pattern>, Prelude), ParseErr
             "*" => GlobInclude,
             "!" => SimpleExclude,
             "!*" | "*!" => GlobExclude,
-            other => return Err(InvalidPrelude)
+            _ => return Err(InvalidPrelude)
         }
     };
 

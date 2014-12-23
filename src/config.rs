@@ -37,6 +37,7 @@ impl Config {
 }
 
 // Concrete config items
+#[deriving(Copy)]
 pub struct SourceDir;
 
 impl Assoc<Path> for SourceDir {}
@@ -47,6 +48,7 @@ impl ConfigItem<Path> for SourceDir {
     }
 }
 
+#[deriving(Copy)]
 pub struct DestDir;
 
 impl Assoc<Path> for DestDir {}
@@ -68,6 +70,7 @@ impl ConfigItem<ComparisonMethod> for ComparisonMethod {
 }
 
 
+#[deriving(Copy)]
 pub struct IncludeByDefault;
 
 impl Assoc<bool> for IncludeByDefault {}
@@ -79,7 +82,7 @@ impl ConfigItem<bool> for IncludeByDefault {
 }
 
 
-#[deriving(PartialEq, Eq, Hash, Show, Clone)]
+#[deriving(PartialEq, Eq, Hash, Show, Copy, Clone)]
 pub enum DeleteBehaviour {
     IncludedNoEquiv,
     ExcludedEquiv,

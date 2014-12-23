@@ -8,7 +8,6 @@ use std::collections::HashSet;
 
 use sequence_trie::SequenceTrie;
 
-use pattern::Pattern;
 use matcher::{Matcher, PathTrie};
 use matcher::Class::Included;
 use config::{Config, ComparisonMethod, IncludeByDefault, DeleteBehaviour};

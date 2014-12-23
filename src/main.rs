@@ -17,7 +17,7 @@ extern crate docopt;
 use std::io::fs::File;
 use std::str::from_utf8;
 
-use config::{Config, SourceDir, DestDir};
+use config::{SourceDir, DestDir};
 use parser::parse_include_file;
 use sync::sync;
 
@@ -33,7 +33,10 @@ pub mod arg_parser;
 fn main() {
     let mut config = match arg_parser::parse_args() {
         Ok(config) => config,
-        Err(e) => panic!("Error: {}", e)
+        Err(e) => {
+            println!("{}", e);
+            return;
+        }
     };
 
     let src_dir = config.get::<SourceDir, Path>().clone();
@@ -54,7 +57,10 @@ fn main() {
 
     let (copy_paths, delete_paths) = match sync(&src_dir, &dest_dir, &matcher, &mut config) {
         Ok(x) => x,
-        Err(e) => panic!(format!("Error: {}", e))
+        Err(e) => {
+            println!("{}", e);
+            return;
+        }
     };
 
     println!("Would Copy:");

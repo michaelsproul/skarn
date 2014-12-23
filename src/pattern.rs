@@ -1,7 +1,6 @@
 use glob;
 
 use std::fmt::{mod, Formatter, Show};
-use sequence_trie::SequenceTrie;
 use self::Pattern::{Plain, Glob};
 
 /// Enum for different pattern types.
