@@ -12,14 +12,7 @@ name = "skarn"
 glob = "*"
 docopt = "*"
 docopt_macros = "*"
-
-[dependencies.typemap]
-
-git = "https://github.com/reem/rust-typemap.git"
-
-[dependencies.phantom]
-
-git = "https://github.com/reem/rust-phantom.git"
+rustc-serialize = "*"
 
 [dependencies.sequence_trie]
 

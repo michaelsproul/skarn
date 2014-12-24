@@ -4,11 +4,9 @@
 
 extern crate regex;
 #[phase(plugin)] extern crate regex_macros;
-extern crate serialize;
+extern crate "rustc-serialize" as rustc_serialize;
 
 extern crate glob;
-extern crate typemap;
-extern crate phantom;
 extern crate sequence_trie;
 
 extern crate docopt;
@@ -17,7 +15,7 @@ extern crate docopt;
 use std::io::fs::File;
 use std::str::from_utf8;
 
-use config::{SourceDir, DestDir};
+use config::PatternSource::IncludeFile;
 use parser::parse_include_file;
 use sync::sync;
 
@@ -39,11 +37,10 @@ fn main() {
         }
     };
 
-    let src_dir = config.get::<SourceDir, Path>().clone();
-    let dest_dir = config.get::<DestDir, Path>().clone();
-    println!("Source is: {}, Dest is: {}", src_dir.display(), dest_dir.display());
-
-    let include_file = File::open(&Path::new("include.ska")).read_to_end().unwrap();
+    let include_file = match config.pattern_type {
+        IncludeFile(ref file) => File::open(file).read_to_end().unwrap(),
+        _ => unimplemented!()
+    };
 
     let matcher = match parse_include_file(from_utf8(include_file.as_slice()).unwrap()) {
         Ok(x) => x,
@@ -55,7 +52,7 @@ fn main() {
     debug!("Exclude Tree:");
     debug!("{}", matcher.exclude_trie);
 
-    let (copy_paths, delete_paths) = match sync(&src_dir, &dest_dir, &matcher, &mut config) {
+    let (copy_paths, delete_paths) = match sync(&matcher, &mut config) {
         Ok(x) => x,
         Err(e) => {
             println!("{}", e);

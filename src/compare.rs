@@ -5,14 +5,14 @@
 use std::io::{IoResult, EndOfFile};
 use std::io::fs::File;
 
-pub trait ComparisonMethodTrait {
+pub trait ComparisonMethod {
     fn same_file(&self, &Path, &Path) -> IoResult<bool>;
 }
 
 #[deriving(Copy)]
 pub struct Content;
 
-impl ComparisonMethodTrait for Content {
+impl ComparisonMethod for Content {
     fn same_file(&self, x: &Path, y: &Path) -> IoResult<bool> {
         let mut x_file = try!(File::open(x));
         let mut y_file = try!(File::open(y));

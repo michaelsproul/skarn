@@ -1,22 +1,27 @@
+use std::collections::HashSet;
+
 use docopt;
 
-use config::{Config, SourceDir, DestDir};
+use config::Config;
+use config::PatternSource::IncludeFile;
+use compare::{ComparisonMethod, Content};
 
 docopt! { Args, "
-Usage: skarn <source> <dest>
+Usage: skarn --include <include_file> [options] <source> <dest>
+
+--delete <delete_behaviour>
 "
 }
 
 pub fn parse_args() -> Result<Config, docopt::Error> {
-    let mut config = Config::new();
-
     let args: Args = try!(Args::docopt().decode());
 
-    let source_dir = Path::new(args.arg_source);
-    let dest_dir = Path::new(args.arg_dest);
-
-    config.set::<SourceDir, Path>(source_dir);
-    config.set::<DestDir, Path>(dest_dir);
-
-    Ok(config)
+    Ok(Config {
+        source_dir: Path::new(args.arg_source),
+        dest_dir: Path::new(args.arg_dest),
+        pattern_type: IncludeFile(Path::new(args.arg_include_file)),
+        comparison_method: box Content as Box<ComparisonMethod>,
+        delete_behaviour: HashSet::new(),
+        include_by_default: true
+    })
 }
