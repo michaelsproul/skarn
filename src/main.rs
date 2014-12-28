@@ -3,48 +3,78 @@
 #[phase(plugin, link)] extern crate log;
 
 extern crate regex;
-#[phase(plugin)] extern crate regex_macros;
+#[phase(plugin)]
+extern crate regex_macros;
 extern crate "rustc-serialize" as rustc_serialize;
 
 extern crate glob;
 extern crate sequence_trie;
 
 extern crate docopt;
-#[phase(plugin)] extern crate docopt_macros;
+#[phase(plugin)]
+extern crate docopt_macros;
 
 use std::io::fs::File;
-use std::str::from_utf8;
+use std::str;
+use std::error::Error as StdError;
 
 use config::PatternSource::IncludeFile;
 use parser::parse_include_file;
 use sync::sync;
 
-pub mod compare;
+// Configuration and argument parsing.
+pub mod arg_parser;
 pub mod config;
-pub mod parser;
+
+// File system manipulation.
+pub mod compare;
 pub mod path;
+
+// Include file parsing.
+pub mod parser;
 pub mod pattern;
+
+// Selection algorithm logic.
 pub mod matcher;
 pub mod sync;
-pub mod arg_parser;
+
+pub mod error;
 
 fn main() {
+    // Parse the command-line arguments to create a config file.
     let mut config = match arg_parser::parse_args() {
         Ok(config) => config,
         Err(e) => {
-            println!("{}", e);
+            println!("{}", e.description());
             return;
         }
     };
 
-    let include_file = match config.pattern_type {
-        IncludeFile(ref file) => File::open(file).read_to_end().unwrap(),
+    // Read and parse the include file.
+    let include_file_data = match config.pattern_type {
+        IncludeFile(ref file) => match File::open(file).read_to_end() {
+            Ok(data) => data,
+            Err(e) => {
+                println!("Error reading include file.");
+                println!("{}", e);
+                return;
+            }
+        },
         _ => unimplemented!()
     };
 
-    let matcher = match parse_include_file(from_utf8(include_file.as_slice()).unwrap()) {
+    let include_file = match str::from_utf8(include_file_data[]) {
+        Ok(data) => data,
+        Err(..) => panic!()
+    };
+
+    let matcher = match parse_include_file(include_file) {
         Ok(x) => x,
-        Err(e) => panic!("Error: {}", e)
+        Err(e) => {
+            println!("Syntax error in include file.");
+            println!("{}", e);
+            return;
+        }
     };
 
     debug!("Include Tree:");
@@ -60,13 +90,13 @@ fn main() {
         }
     };
 
-    println!("Would Copy:");
+    debug!("Paths to copy:");
     for path in copy_paths.keys() {
-        println!("{}", path);
+        debug!("{}", path);
     }
 
-    println!("Would Delete:");
+    debug!("Would Delete:");
     for path in delete_paths.keys() {
-        println!("{}", path);
+        debug!("{}", path);
     }
 }
