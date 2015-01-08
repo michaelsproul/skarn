@@ -24,3 +24,10 @@ Possible Additions
 
 [rust]: https://rust-lang.org/
 [hashdeep]: https://github.com/jessek/hashdeep/
+
+License
+====
+
+All Skarn implementation code is licensed under the terms of the GPLv3 or higher.
+
+See http://www.gnu.org/copyleft/gpl.html
