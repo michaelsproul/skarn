@@ -1,10 +1,10 @@
 use glob;
 
-use std::fmt::{mod, Formatter, Show};
+use std::fmt::{self, Formatter, Debug};
 use self::Pattern::{Plain, Glob};
 
 /// Enum for different pattern types.
-#[deriving(PartialEq, Eq, Hash, Clone)]
+#[derive(PartialEq, Eq, Hash, Clone)]
 pub enum Pattern {
     /// Just a string, no wildcards.
     Plain(String),
@@ -12,7 +12,7 @@ pub enum Pattern {
     Glob(glob::Pattern)
 }
 
-impl Show for Pattern {
+impl Debug for Pattern {
     fn fmt(&self, fmt: &mut Formatter) -> Result<(), fmt::Error> {
         match *self {
             Plain(ref s) => s.fmt(fmt),

@@ -13,7 +13,7 @@ pub struct Matcher {
     pub exclude_trie: PatternTrie
 }
 
-#[deriving(Copy)]
+#[derive(Copy)]
 pub enum Class {
     Included,
     Excluded,

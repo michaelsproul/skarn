@@ -1,3 +1,5 @@
+#![plugin(docopt)]
+
 use docopt;
 
 use error::Error as SkarnError;

@@ -9,7 +9,7 @@ pub trait ComparisonMethod {
     fn same_file(&self, &Path, &Path) -> IoResult<bool>;
 }
 
-#[deriving(Copy)]
+#[derive(Copy)]
 pub struct Content;
 
 impl ComparisonMethod for Content {

@@ -10,10 +10,17 @@ name = "skarn"
 
 [dependencies]
 glob = "*"
+regex = "*"
+regex_macros = "*"
 docopt = "*"
 docopt_macros = "*"
 rustc-serialize = "*"
+sequence_trie = "*"
 
-[dependencies.sequence_trie]
+#[dependencies.fern]
 
-git = "https://github.com/michaelsproul/rust-sequence-trie.git"
+#git = "https://github.com/daboross/fern-rs.git"
+
+#[dependencies.fern_macros]
+
+#git = "https://github.com/daboross/fern-macros-rs.git"

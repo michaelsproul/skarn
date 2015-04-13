@@ -11,7 +11,7 @@ pub enum PatternSource {
     Git
 }
 
-#[deriving(PartialEq, Eq, Hash, Show, Copy, Clone)]
+#[derive(PartialEq, Eq, Hash, Debug, Copy, Clone)]
 pub enum DeleteBehaviour {
     IncludedNoEquiv,
     ExcludedEquiv,

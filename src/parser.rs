@@ -14,7 +14,7 @@ use self::ParseError::{InvalidLine, InvalidPrelude, TrivialInput};
 static COMMENT_LINE_REGEX: Regex = regex!("^/#/ .*");
 static LINE_REGEX: Regex = regex!(r"^(?P<prelude>/(?P<inner_prelude>[!\*]{1,2})/ )?(?P<path>[^/].*)$");
 
-#[deriving(Show, Copy)]
+#[derive(Debug, Copy)]
 pub enum Prelude {
     SimpleInclude,
     SimpleExclude,
@@ -22,7 +22,7 @@ pub enum Prelude {
     GlobExclude,
 }
 
-#[deriving(Show, Copy)]
+#[derive(Debug, Copy)]
 pub enum ParseError {
     InvalidLine,
     InvalidPrelude,

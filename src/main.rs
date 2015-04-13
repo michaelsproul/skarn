@@ -1,18 +1,19 @@
-#![feature(phase, slicing_syntax, globs)]
+#![feature(slicing_syntax, plugin)]
+#![plugin(docopt, regex)]
 
-#[phase(plugin, link)] extern crate log;
-
+// Rust-lang libraries.
 extern crate regex;
-#[phase(plugin)]
-extern crate regex_macros;
 extern crate "rustc-serialize" as rustc_serialize;
-
 extern crate glob;
+
+// Third-party libraries.
 extern crate sequence_trie;
 
 extern crate docopt;
-#[phase(plugin)]
-extern crate docopt_macros;
+
+extern crate fern;
+#[macro_use]
+extern crate fern_macros;
 
 use std::io::fs::File;
 use std::str;
@@ -39,8 +40,15 @@ pub mod matcher;
 pub mod sync;
 
 pub mod error;
+pub mod debug;
 
 fn main() {
+    // Set up logging.
+    if let Err(e) = debug::setup_logger() {
+        println!("Error setting up logging:");
+        println!("e");
+    }
+
     // Parse the command-line arguments to create a config file.
     let mut config = match arg_parser::parse_args() {
         Ok(config) => config,

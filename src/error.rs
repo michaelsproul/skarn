@@ -47,7 +47,7 @@ impl error::Error for Error {
     }
 }
 
-impl fmt::Show for Error {
+impl fmt::Debug for Error {
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
         self.description.fmt(f)
     }
