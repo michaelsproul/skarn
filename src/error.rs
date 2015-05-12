@@ -3,6 +3,7 @@ use std::fmt;
 
 use docopt;
 
+#[derive(Debug)]
 pub struct Error {
     description: &'static str,
     detail: Option<String>,
@@ -34,10 +35,6 @@ impl error::Error for Error {
         self.description
     }
 
-    fn detail(&self) -> Option<String> {
-        self.detail.clone()
-    }
-
     fn cause<'a>(&'a self) -> Option<&'a error::Error> {
         // Option::map doesn't seem to work here at the moment.
         match self.cause {
@@ -47,14 +44,17 @@ impl error::Error for Error {
     }
 }
 
-impl fmt::Debug for Error {
+impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
-        self.description.fmt(f)
+        match self.detail {
+            Some(ref detail) => detail.fmt(f),
+            None => self.description.fmt(f)
+        }
     }
 }
 
-impl error::FromError<docopt::Error> for Error {
-    fn from_error(err: docopt::Error) -> Error {
+impl From<docopt::Error> for Error {
+    fn from(err: docopt::Error) -> Error {
         Error::new("docopt parsing error").with_cause(box err as Box<error::Error>)
     }
 }

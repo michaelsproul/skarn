@@ -1,5 +1,6 @@
 //! config.rs, part of Skarn.
 
+use std::path::PathBuf;
 use std::collections::HashSet;
 
 use compare::ComparisonMethod;
@@ -7,7 +8,7 @@ use error::Error;
 use self::DeleteBehaviour::*;
 
 pub enum PatternSource {
-    IncludeFile(Path),
+    IncludeFile(PathBuf),
     Git
 }
 
@@ -51,7 +52,7 @@ impl InsertAll for HashSet<DeleteBehaviour> {
             if !newly_inserted {
                 return Err(
                     Error::new("error parsing delete behaviour string")
-                    .with_detail(format!("duplicate option (implied or explicit): '{}'", v))
+                    .with_detail(format!("duplicate option (implied or explicit): '{:?}'", v))
                 );
             }
         }
@@ -60,8 +61,8 @@ impl InsertAll for HashSet<DeleteBehaviour> {
 }
 
 pub struct Config {
-    pub source_dir: Path,
-    pub dest_dir: Path,
+    pub source_dir: PathBuf,
+    pub dest_dir: PathBuf,
     pub pattern_type: PatternSource,
     pub comparison_method: Box<ComparisonMethod + 'static>,
     pub delete_behaviour: HashSet<DeleteBehaviour>,

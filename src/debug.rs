@@ -1,16 +1,16 @@
 /// Skarn debugging utilities.
 
-use std::sync;
-use fern;
+use log::LogLevelFilter::Trace;
+use fern::{DispatchConfig, OutputConfig};
 
 use error::Error as SkarnError;
 
 fn setup_logger() -> Result<(), SkarnError> {
-    let logger_config = fern::LoggerConfig {
-        format: box |msg: &str, level: &fern::Level| {
+    let logger_config = DispatchConfig {
+        format: box |msg, level, _location| {
             format!("[{}] {}", level, msg)
         },
-        output: vec![fern::OutputConfig::Stderr],
+        output: vec![OutputConfig::stderr()],
         level: fern::Level::Debug,
     };
 

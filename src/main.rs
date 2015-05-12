@@ -1,22 +1,24 @@
-#![feature(slicing_syntax, plugin)]
-#![plugin(docopt, regex)]
+#![feature(box_syntax)]
+#![feature(plugin)]
+#![feature(path_relative_from)]
+#![feature(path_ext)]
+#![feature(fs_walk)]
+
+#![plugin(docopt_macros, regex_macros)]
 
 // Rust-lang libraries.
 extern crate regex;
-extern crate "rustc-serialize" as rustc_serialize;
+extern crate rustc_serialize;
 extern crate glob;
+#[macro_use] extern crate log;
+extern crate env_logger;
 
 // Third-party libraries.
 extern crate sequence_trie;
-
 extern crate docopt;
 
-extern crate fern;
-#[macro_use]
-extern crate fern_macros;
-
-use std::io::fs::File;
-use std::str;
+use std::fs::File;
+use std::io::Read;
 use std::error::Error as StdError;
 
 use config::PatternSource::IncludeFile;
@@ -40,14 +42,13 @@ pub mod matcher;
 pub mod sync;
 
 pub mod error;
-pub mod debug;
+//pub mod debug;
 
 fn main() {
     // Set up logging.
-    if let Err(e) = debug::setup_logger() {
-        println!("Error setting up logging:");
-        println!("e");
-    }
+    env_logger::init().unwrap();
+
+    info!("Skarn starting up");
 
     // Parse the command-line arguments to create a config file.
     let mut config = match arg_parser::parse_args() {
@@ -58,53 +59,45 @@ fn main() {
         }
     };
 
-    // Read and parse the include file.
-    let include_file_data = match config.pattern_type {
-        IncludeFile(ref file) => match File::open(file).read_to_end() {
-            Ok(data) => data,
-            Err(e) => {
-                println!("Error reading include file.");
-                println!("{}", e);
-                return;
-            }
+    // Read the include file.
+    let mut include_file = String::new();
+    match config.pattern_type {
+        IncludeFile(ref filename) => {
+            File::open(filename).unwrap().read_to_string(&mut include_file).ok();
         },
         _ => unimplemented!()
     };
 
-    let include_file = match str::from_utf8(include_file_data[]) {
-        Ok(data) => data,
-        Err(..) => panic!()
-    };
-
-    let matcher = match parse_include_file(include_file) {
+    // Parse the include file.
+    let matcher = match parse_include_file(&include_file) {
         Ok(x) => x,
         Err(e) => {
             println!("Syntax error in include file.");
-            println!("{}", e);
+            println!("{:?}", e);
             return;
         }
     };
 
     debug!("Include Tree:");
-    debug!("{}", matcher.include_trie);
+    debug!("{:?}", matcher.include_trie);
     debug!("Exclude Tree:");
-    debug!("{}", matcher.exclude_trie);
+    debug!("{:?}", matcher.exclude_trie);
 
     let (copy_paths, delete_paths) = match sync(&matcher, &mut config) {
         Ok(x) => x,
         Err(e) => {
-            println!("{}", e);
+            println!("{:?}", e);
             return;
         }
     };
 
     debug!("Paths to copy:");
     for path in copy_paths.keys() {
-        debug!("{}", path);
+        debug!("{:?}", path);
     }
 
     debug!("Would Delete:");
     for path in delete_paths.keys() {
-        debug!("{}", path);
+        debug!("{:?}", path);
     }
 }

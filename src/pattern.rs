@@ -33,13 +33,15 @@ impl Pattern {
         // Otherwise, create a glob pattern with non-star wildcards escaped
         else {
             let escaped_pattern = Pattern::escape_all_but_star(pattern);
-            Glob(glob::Pattern::new(escaped_pattern.as_slice()))
+            // FIXME: Remove unwrap.
+            Glob(glob::Pattern::new(&escaped_pattern[..]).unwrap())
         }
     }
 
     /// Create a Glob Pattern from a string.
     pub fn glob_pattern(pattern: &str) -> Pattern {
-        Glob(glob::Pattern::new(pattern))
+        // FIXME!
+        Glob(glob::Pattern::new(pattern).unwrap())
     }
 
     /// Scan a simple pattern for unescaped '*' characters.
@@ -143,7 +145,7 @@ impl Pattern {
     pub fn matches(&self, string: &str) -> bool {
         match *self {
             Plain(ref pattern) => {
-                pattern.as_slice() == string
+                &pattern[..] == string
             },
 
             Glob(ref pattern) => {

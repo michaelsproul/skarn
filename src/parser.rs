@@ -14,7 +14,7 @@ use self::ParseError::{InvalidLine, InvalidPrelude, TrivialInput};
 static COMMENT_LINE_REGEX: Regex = regex!("^/#/ .*");
 static LINE_REGEX: Regex = regex!(r"^(?P<prelude>/(?P<inner_prelude>[!\*]{1,2})/ )?(?P<path>[^/].*)$");
 
-#[derive(Debug, Copy)]
+#[derive(Debug, Clone, Copy)]
 pub enum Prelude {
     SimpleInclude,
     SimpleExclude,
@@ -22,7 +22,7 @@ pub enum Prelude {
     GlobExclude,
 }
 
-#[derive(Debug, Copy)]
+#[derive(Debug, Clone, Copy)]
 pub enum ParseError {
     InvalidLine,
     InvalidPrelude,
@@ -47,8 +47,8 @@ pub fn parse_include_file(include_file: &str) -> Result<Matcher, ParseError> {
         is_trivial_tree = false;
 
         match prelude {
-            SimpleInclude | GlobInclude => include_trie.insert(path_components.as_slice(), ()),
-            SimpleExclude | GlobExclude => exclude_trie.insert(path_components.as_slice(), ())
+            SimpleInclude | GlobInclude => include_trie.insert(&path_components[..], ()),
+            SimpleExclude | GlobExclude => exclude_trie.insert(&path_components[..], ())
         };
     }
 
