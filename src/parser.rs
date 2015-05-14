@@ -1,5 +1,5 @@
-/// parser.rs, part of Skarn.
-/// This module contains functions for processing an include file into a tree of PatternNode objects.
+//! parser.rs, part of Skarn.
+//! This module contains functions for processing an include file into a tree of PatternNode objects.
 
 use regex::Regex;
 
@@ -11,8 +11,8 @@ use matcher::{Matcher, PatternTrie};
 use self::Prelude::{SimpleInclude, SimpleExclude, GlobInclude, GlobExclude};
 use self::ParseError::{InvalidLine, InvalidPrelude, TrivialInput};
 
-static COMMENT_LINE_REGEX: Regex = regex!("^/#/ .*");
-static LINE_REGEX: Regex = regex!(r"^(?P<prelude>/(?P<inner_prelude>[!\*]{1,2})/ )?(?P<path>[^/].*)$");
+static COMMENT_LINE_REGEX: Regex = regex!("^(/#/ .*)?$");
+static LINE_REGEX: Regex = regex!(r"^(?P<prelude>/(?P<inner_prelude>[!\*]{1,2})/ )?(?P<path>[^/].+)$");
 
 #[derive(Debug, Clone, Copy)]
 pub enum Prelude {
@@ -70,12 +70,12 @@ pub fn parse_single_line(line: &str) -> Result<(Vec<Pattern>, Prelude), ParseErr
     };
 
     // Extract the prelude.
-    let prelude = match captures.name("prelude").unwrap() {
-        "" => SimpleInclude,
-        _ => match captures.name("inner_prelude").unwrap() {
-            "*" => GlobInclude,
-            "!" => SimpleExclude,
-            "!*" | "*!" => GlobExclude,
+    let prelude = match captures.name("prelude") {
+        None => SimpleInclude,
+        Some(_) => match captures.name("inner_prelude") {
+            Some("*") => GlobInclude,
+            Some("!") => SimpleExclude,
+            Some("!*") | Some("*!") => GlobExclude,
             _ => return Err(InvalidPrelude)
         }
     };
@@ -85,10 +85,10 @@ pub fn parse_single_line(line: &str) -> Result<(Vec<Pattern>, Prelude), ParseErr
 
     let components: Vec<Pattern> = match prelude {
         SimpleInclude | SimpleExclude => {
-            path.split('/').map(|comp| Pattern::simple_pattern(comp)).collect()
+            path.split('/').map(Pattern::simple_pattern).collect()
         },
         GlobInclude | GlobExclude => {
-            path.split('/').map(|comp| Pattern::glob_pattern(comp)).collect()
+            path.split('/').map(Pattern::glob_pattern).collect()
         }
     };
 
